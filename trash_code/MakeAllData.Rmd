@@ -1,0 +1,130 @@
+---
+title: "ALL DATA"
+author: "生井沢祥吾"
+date: "2024-10-03"
+output: html_document
+---
+
+# 全データの結合
+## 調査の数だけデータがバラバラの状態であるため、すべてのデータを結合した一つのデータセットを作成します。
+- A1からDまでの調査には`PhraseScore`列があるのでまとめて削除する。
+- `Is_Participate`列を調査種類のラベルに変更する
+  - 例：A1の調査データであれば`Is_Participate`列にある`Yes`を`A1`に変更する。
+- `Is_Participate`列名を`SurvayType`に変更
+
+--- 
+
+
+
+
+### ライブラリ読込
+```{r}
+library(tidyverse)
+library(ggplotgui)#ggplot_shiny(exdataset)をコンソールに打ち込んで実行する
+library(GGally)
+library(plotly)
+library(dplyr)
+```
+
+### データ読込
+```{r}
+A1_Dummy <- read_csv("../trash_data/A1_trash.csv")
+A2_Dummy <- read_csv("../trash_data/A2_trash.csv")
+A3_Dummy <- read_csv("../trash_data/A3_trash.csv")
+A4_Dummy <- read_csv("../trash_data/A4_trash.csv")
+B1_Dummy <- read_csv("../trash_data/B1_trash.csv")
+B1_Dummy <- read_csv("../trash_data/B1_trash.csv")
+B2_Dummy <- read_csv("../trash_data/B2_trash.csv")
+C_Dummy <- read_csv("../trash_data/C_trash.csv")
+D_Dummy <- read_csv("../trash_data/D_trash.csv")
+
+E <- read_csv("../trash_data/E_trash.csv")
+F <- read_csv("../trash_data/F_trash.csv")
+G <- read_csv("../trash_data/G_trash.csv")
+H <- read_csv("../trash_data/H_trash.csv")
+I <- read_csv("../trash_data/I_trash.csv")
+J <- read_csv("../trash_data/J_trash.csv")
+K <- read_csv("../trash_data/K_trash.csv")
+L <- read_csv("../trash_data/L_trash.csv")
+```
+
+
+### A1~Dの`PhraseScore`列の削除
+```{r}
+A1 <- A1_Dummy |>
+              select(-PhraseScore) # PhraseScoreカラムを削除
+
+
+A2 <- A2_Dummy |>
+              select(-PhraseScore) # PhraseScoreカラムを削除
+
+A3 <- A3_Dummy |>
+              select(-PhraseScore) # PhraseScoreカラムを削除
+
+A4 <- A4_Dummy |>
+              select(-PhraseScore) # PhraseScoreカラムを削除
+
+B1 <- B1_Dummy |>
+              select(-PhraseScore) # PhraseScoreカラムを削除
+
+B2 <- B2_Dummy |>
+              select(-PhraseScore) # PhraseScoreカラムを削除
+
+C <- C_Dummy |>
+              select(-PhraseScore) # PhraseScoreカラムを削除
+
+D <- D_Dummy |>
+              select(-PhraseScore) # PhraseScoreカラムを削除
+```
+
+### `Is_Participate`列の”Yes”をアンケートの実施種別を表すA1~Lに置換
+```{r}
+A1["Is_Participate"] <- lapply(A1["Is_Participate"], gsub, pattern="Yes", replacement = "A1")
+A2["Is_Participate"] <- lapply(A2["Is_Participate"], gsub, pattern="Yes", replacement = "A2")
+A3["Is_Participate"] <- lapply(A3["Is_Participate"], gsub, pattern="Yes", replacement = "A3")
+A4["Is_Participate"] <- lapply(A4["Is_Participate"], gsub, pattern="Yes", replacement = "A4")
+B1["Is_Participate"] <- lapply(B1["Is_Participate"], gsub, pattern="Yes", replacement = "B1")
+B2["Is_Participate"] <- lapply(B2["Is_Participate"], gsub, pattern="Yes", replacement = "B1")
+C["Is_Participate"] <- lapply(C["Is_Participate"], gsub, pattern="Yes", replacement = "C")
+D["Is_Participate"] <- lapply(D["Is_Participate"], gsub, pattern="Yes", replacement = "D")
+E["Is_Participate"] <- lapply(E["Is_Participate"], gsub, pattern="Yes", replacement = "E")
+F["Is_Participate"] <- lapply(F["Is_Participate"], gsub, pattern="Yes", replacement = "F")
+G["Is_Participate"] <- lapply(G["Is_Participate"], gsub, pattern="Yes", replacement = "G")
+H["Is_Participate"] <- lapply(H["Is_Participate"], gsub, pattern="Yes", replacement = "H")
+I["Is_Participate"] <- lapply(I["Is_Participate"], gsub, pattern="Yes", replacement = "I")
+J["Is_Participate"] <- lapply(J["Is_Participate"], gsub, pattern="Yes", replacement = "J")
+K["Is_Participate"] <- lapply(K["Is_Participate"], gsub, pattern="Yes", replacement = "K")
+L["Is_Participate"] <- lapply(L["Is_Participate"], gsub, pattern="Yes", replacement = "L")
+```
+
+### A1~Lのデータ結合
+```{r}
+df_ALL <- rbind(A1,A2,A3,A4,B1,B2,C,D,E,F,G,H,I,J,K,L)
+
+```
+
+### `Is_Participate`列名を`SurvayType`に変更
+```{r}
+df_ALL <- rename(df_ALL, SurvayType = Is_Participate)
+df_ALL
+```
+
+### データの保存
+```{r}
+#write.csv(df_ALL, file="../trash_data/AllData_trash.csv", fileEncoding = "CP932") # csv形式
+```
+
+
+
+
+### 作成したDFの確認
+エクセルでCSVが文字化けしないよう上書き保存済
+```{r}
+AllData <- read_csv("../trash_data/AllData_trash.csv")
+AllData
+```
+
+
+
+
+

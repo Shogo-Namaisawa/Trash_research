@@ -1,0 +1,461 @@
+---
+title: "ポスター効果検証"
+output: html_document
+date: "2024-10-04"
+df_print: paged
+---
+
+### ライブラリ読込 
+```{r}
+#install.packages("pacman")
+pacman::p_load(
+  tidyverse,
+  ggplotgui,#ggplot_shiny(exdataset)
+  GGally,
+  broom,
+  knitr,
+  kableExtra,
+  ### table1を表にしてまとめやすく
+  table1,
+  sjPlot
+)
+```
+
+### 元データ読み込み
+```{r}
+Data <- read_csv("../trash_data/AllData_trash.csv") 
+```
+
+### 不必要な３列は削除
+```{r}
+AllData <- Data %>% 
+  select(-ChooseHigh_Phrases1, -ChooseHigh_Phrases2, -ChooseHigh_Phrases3) %>%
+  filter(SurvayType != "B1")
+```
+
+
+--- 
+
+# 実験1：目のイラストによる効果比較
+### 分析に必要な4種類のSurvayTypeを抽出したdfを作成
+```{r}
+Eye_Illust_data <- AllData %>%
+  # 目のイラストを比較するために必要なデータのみ抽出
+  filter(SurvayType %in% c("C", "A1","A2","A4"))
+
+Eye_Illust_data <- Eye_Illust_data %>%
+  mutate(SurvayType = replace(SurvayType, SurvayType == "C", "イラストなし")) %>%
+  mutate(SurvayType = replace(SurvayType, SurvayType == "A1", "複雑な目")) %>%
+  mutate(SurvayType = replace(SurvayType, SurvayType == "A2", "女性の目")) %>%
+  mutate(SurvayType = replace(SurvayType, SurvayType == "A4", "簡単な目"))
+
+
+# C案（イラストがNo_image）がInterceptになるように調整
+Eye_Illust_data$SurvayType <- factor(Eye_Illust_data$SurvayType, levels = c("イラストなし", "女性の目", "簡単な目", "複雑な目"))
+```
+
+### 記述統計量の確認
+```{r}
+table1(~ factor(Sex) + PosterScore | SurvayType, data = Eye_Illust_data)
+```
+
+## 分散分析
+- H1)目のイラスト`SurvayType`によってポスターの評価`PosterScore`は異なる。
+- H0)目のイラスト`SurvayType`によってポスターの評価`PosterScore`は異なるというわけではない。
+- 目のイラストが無いポスター案Cを対照群とし、その３種の目のイラストがあるポスター案をそれぞれ比較郡として、**目のイラストによる介入がポスターの評価スコアに影響を与えるのか調査しました。**
+- `Sex`と`Age`のother回答も含めた分析。
+- [共変量あり]と[共変量なし]の両方のモデルを実行して比較します。
+
+### モデル作成（共変量なし）
+```{r}
+Eye_Illust_model <- lm(PosterScore ~ SurvayType, Eye_Illust_data)
+```
+
+### モデル（共変量あり）
+-  Age, Sex, Awareness_Tra, Awareness_Envを共変量として重回帰分析をする
+- 興味としてはSurvayTypeのみ
+```{r}
+Eye_Illust_model2 <- lm(PosterScore ~ SurvayType + Age + Sex + Awareness_Tra + Awareness_Env, Eye_Illust_data)
+```
+
+### グラフ(ggplot)
+```{r}
+# The code below will generate the graph:
+graph <- ggplot(Eye_Illust_model, aes(x = SurvayType, y = PosterScore)) +
+  geom_point(stat = 'summary', fun.y = 'mean') +
+  geom_errorbar(stat = 'summary', fun.data = 'mean_se', 
+                width=0, fun.args = list(mult = 1.96)) +
+  theme_bw(base_family = "HiraKakuPro-W3") # base_family = "HiraKakuPro-W3"
+graph
+```
+
+### データの分布(全データ)
+```{r}
+# The code below will generate the graph:
+graph <- ggplot(Eye_Illust_data, aes(x = PosterScore)) +
+  
+  
+  geom_histogram(position = 'identity',alpha = 0.8,binwidth = 10,boundary = 0) +　#boundary = 0で0が帯の左に
+  scale_x_continuous(breaks = seq(0, max(Eye_Illust_data$PosterScore, na.rm = TRUE),by = 20), limits = c(0, NA)) +
+  # 横軸の最小値を0に設定
+  theme_bw(base_family = "HiraKakuPro-W3")
+
+
+graph
+```
+
+### データの分布(各群)
+```{r}
+graph <- ggplot(Eye_Illust_data, aes(x = PosterScore)) +
+  geom_histogram(position = 'identity', alpha = 1, binwidth = 10, boundary = 0) +
+  facet_wrap( . ~ SurvayType, ncol = 2, nrow = 2 ) +　#表示を２行２列に、ポスター案ごとの分類
+  scale_x_continuous(breaks = seq(0, max(Eye_Illust_data$PosterScore, na.rm = TRUE),by = 20), limits = c(0, NA)) +
+  theme_bw(base_family = "HiraKakuPro-W3")
+
+graph
+```
+
+### 分散分析結果
+```{r}
+#共変量なし
+summary(Eye_Illust_model)
+
+#共変量あり
+summary(Eye_Illust_model2)
+```
+
+### 推定表
+```{r}
+tab_model(Eye_Illust_model, Eye_Illust_model2,
+          show.aic = T)
+```
+
+### model1の分散分析表の出力（共変量無）
+```{r}
+anova_result1 <- anova(Eye_Illust_model) %>%
+  tidy() %>%
+  mutate(across(where(is.numeric), ~ round(., 3))) # 小数点第3位で四捨五入
+
+#分散分析表の出力
+anova_result1
+
+# ANOVA結果をHTMLテーブルで出力
+anova_result1 %>%
+  kable(format = "html", caption = "ANOVA Results") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+```
+
+### model2の分散分析表の出力（共変量アリ）
+```{r}
+anova_result2 <- anova(Eye_Illust_model2) %>%
+  tidy() %>%
+  mutate(across(where(is.numeric), ~ round(., 3))) # 小数点第3位で四捨五入
+
+anova_result2
+
+# ANOVA結果をHTMLテーブルで出力
+anova_result2 %>%
+  kable(format = "html", caption = "ANOVA Results") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+```
+
+--- 
+
+# 実験2：イラスト３×フレーズ３の比較分析
+#### 分析に必要な９種類のSurvayTypeを抽出したdfを作成
+```{r}
+cross_data <- AllData %>%
+  # イラストとフレーズを3*3で比較するために必要なデータのみ抽出
+  filter(SurvayType %in% c("F","G","C","H","I","A4","J","K","A3"))
+```
+
+
+### リネームと変数の分割、並び替え
+- 変数`PhraseType`を作成し、対応するポスター案に適した名前に変更
+  - ポスター案F, H, J の`PhraseType`は「**簡素化メッセージ**」に変更
+
+- 変数`Illustration`を作成し、対応するポスター案に適した名前に変更
+  - ポスター案F, G, C の`Illustration`は「**イラストなし**」に変更
+
+- 変数`SurvayType`もアルファベットだとわかりにくいため、各条件に合わせた名前に変更
+  - ポスター案Fの`SurvayType`は「**イラストなし & 簡素化メッセージ**」に変更
+
+- 変数`PhraseType`と`Illustration`がdfの先頭列に来るように移動
+- 分析時に比較群が左上に、以後の介入群が蛇行列になるよう並び替え
+```{r}
+cross_data2 <- cross_data %>%
+  mutate(
+    PhraseType = SurvayType,
+    Illustration = SurvayType) %>%
+  
+  #フレーズタイプの分類
+  mutate(
+    PhraseType = case_when(
+      SurvayType %in% c("F", "H", "J") ~ "簡素化メッセージ",
+      SurvayType %in% c("G", "I", "K") ~ "社会規範メッセージ",
+      SurvayType %in% c("C", "A4", "A3") ~ "基準メッセージ",
+      TRUE ~ NA_character_  # 該当なしの場合
+    ),
+    
+    #イラストタイプの分類
+    Illustration = case_when(
+      SurvayType %in% c("F", "G", "C") ~ "イラストなし",
+      SurvayType %in% c("H", "I", "A4") ~ "目のイラスト",
+      SurvayType %in% c("J", "K", "A3") ~ "社会規範イラスト",
+      TRUE ~ NA_character_)
+  ) %>%
+  
+    mutate(SurvayType = case_when(
+      SurvayType == "F" ~ "イラストなし & 簡素化メッセージ",
+      SurvayType == "G" ~ "イラストなし & 社会規範メッセージ",
+      SurvayType == "C" ~ "イラストなし & 基準メッセージ",
+      SurvayType == "H" ~ "目のイラスト & 簡素化メッセージ",
+      SurvayType == "I" ~ "目のイラスト & 社会規範メッセージ",
+      SurvayType == "A4" ~ "目のイラスト & 基準メッセージ",
+      SurvayType == "J" ~ "社会規範イラスト & 簡素化メッセージ",
+      SurvayType == "K" ~ "社会規範イラスト & 社会規範メッセージ",
+      SurvayType == "A3" ~ "社会規範イラスト & 基準メッセージ",
+      TRUE ~ SurvayType  # 他の値はそのまま
+  )) %>%
+  
+  
+
+  
+  #フレーズとイラストのタイプ分類が先頭列に来るよう整備
+  relocate(PhraseType, .after = SurvayType) %>%
+  relocate(Illustration, .after = PhraseType) 
+  
+# F案（フレーズがnormal, イラストがNo_image）がInterceptになるように調整
+cross_data2$PhraseType <- factor(cross_data2$PhraseType, levels = c("基準メッセージ", "社会規範メッセージ", "簡素化メッセージ"))
+cross_data2$Illustration <- factor(cross_data2$Illustration, levels = c("イラストなし", "目のイラスト", "社会規範イラスト")) 
+
+cross_data2
+```
+
+
+### 記述統計量の確認
+```{r}
+### table1を表にしてまとめやすく
+library(table1)
+table1(~ factor(Sex) + PosterScore | SurvayType, data = cross_data2)
+```
+
+## グラフ
+### データの分布（全データ）
+```{r}
+# The code below will generate the graph:
+graph <- ggplot(cross_data2, aes(x = PosterScore)) +
+  
+  
+  geom_histogram(
+    position = 'identity',
+    alpha = 0.8,
+    binwidth = 10,
+    boundary = 0                                      #boundary = 0で0が帯の左に
+  ) +
+  
+  
+  scale_x_continuous(
+    breaks = seq(0, 
+                 max(cross_data2$PosterScore, 
+                 na.rm = TRUE),by = 20), 
+    
+    limits = c(0, NA)                                 # 横軸の最小値を0に設定
+  ) +
+  
+  
+  theme_bw(base_family = "HiraKakuPro-W3")
+
+
+graph
+```
+
+### データの分布(各群)
+```{r}
+# The code below will generate the graph:
+graph <- ggplot(cross_data2, aes(x = PosterScore)) +
+  geom_histogram(position = 'identity', alpha = 0.8, binwidth = 10, boundary = 0) +
+  facet_grid( PhraseType ~ Illustration ) +
+  scale_x_continuous(breaks = seq(0, max(cross_data2$PosterScore, na.rm = TRUE),by = 20), limits = c(0, NA)) +
+  theme_bw(base_family = "HiraKakuPro-W3")
+
+graph
+```
+
+### フレーズとイラストでグリッドしたグラフ
+```{r}
+graph <- ggplot(cross_data2, aes(x = SurvayType, y = PosterScore)) +
+  # 平均を表示
+  geom_point(stat = 'summary', fun = mean) +
+  # 95%信頼区間のエラーバーを表示
+  geom_errorbar(stat = 'summary', fun.data = mean_se, 
+                width = 0, fun.args = list(mult = 1.96)) +
+  # x=50の位置に赤くて太い線を追加
+  geom_hline(yintercept = 50, color = "red", size = 1, alpha = 0.3) +
+
+  # 9つのグラフを分けて表示
+  facet_grid(PhraseType ~ Illustration) +
+  
+  # グラフのテーマ設定
+  theme_bw(base_family = "HiraKakuPro-W3") + 
+  
+  #x軸の値を記載しない
+  theme(axis.text.x = element_blank())
+
+graph
+
+```
+
+## 分析方法
+#### 各要因が３水準の二要因分散分析(Two-way ANOVA)
+- H1)イラスト`PhraseType`とフレーズ`Illustration`によってポスターの評価`PosterScore`は異なる。
+- H0)イラスト`PhraseType`とフレーズ`Illustration`によってポスターの評価`PosterScore`は異なるというわけではない。
+
+
+## 分析 
+
+#### モデル作 - **交互作用なし**
+```{r}
+Score_model_noint1 <- lm(PosterScore ~ PhraseType + Illustration, cross_data2)#共変量なし
+Score_model_noint2 <- lm(PosterScore ~ PhraseType + Illustration + Age + Sex + Awareness_Tra + Awareness_Env, cross_data2)#共変量あり
+```
+
+#### モデル構築 - **交互作用あり**
+```{r}
+Score_model_int1 <- lm(PosterScore ~ PhraseType * Illustration, cross_data2) #モデル（共変量なし)
+Score_model_int2 <- lm(PosterScore ~ PhraseType * Illustration + Age + Sex + Awareness_Tra + Awareness_Env, cross_data2)#モデル（共変量あり)
+```
+
+#### anovaのHTML出力
+- Model1（交互作用なし、共変量なし）
+```{r}
+# ANOVAの実行例 
+anova_result_model1 <- anova(Score_model_noint1) %>%
+  tidy()
+
+#出力結果
+anova_result_model1
+
+# ANOVA結果をHTMLテーブルで出力
+anova_result_model1 %>%
+  kable(format = "html", caption = "ANOVA Results") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+```
+
+- Model2（交互作用あり、共変量なし）
+```{r}
+# ANOVAの実行例 
+anova_result_model3 <- anova(Score_model_int1) %>%
+  tidy()
+
+#出力結果
+anova_result_model3
+
+# ANOVA結果をHTMLテーブルで出力
+anova_result_model3 %>%
+  kable(format = "html", caption = "ANOVA Results") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+```
+
+- Model3（交互作用なし、共変量あり）
+```{r}
+# ANOVAの実行例 
+anova_result_model2 <- anova(Score_model_noint2) %>%
+  tidy()
+
+#出力結果
+anova_result_model1
+
+# ANOVA結果をHTMLテーブルで出力
+anova_result_model2 %>%
+  kable(format = "html", caption = "ANOVA Results") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+```
+
+
+
+- Model4（交互作用あり、共変量あり）
+```{r}
+# ANOVAの実行例 
+anova_result_model4 <- anova(Score_model_int2) %>%
+  tidy()
+
+#出力結果
+anova_result_model4
+
+# ANOVA結果をHTMLテーブルで出力
+anova_result_model4 %>%
+  kable(format = "html", caption = "ANOVA Results") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+```
+
+
+### 推定表 
+```{r}
+tab_model(Score_model_noint1, Score_model_int1, Score_model_noint2, Score_model_int2, 
+          show.aic = T)
+```
+
+
+
+
+--- 
+
+
+### ポスターデザイン[モノクロ]と[赤白]による違い
+```{r}
+Design_mono <- Data %>%
+  filter(SurvayType == "B1") %>%
+  pull(PosterScore)
+
+
+Design_color <- Data %>%
+  filter(SurvayType == "E") %>%
+  pull(PosterScore)
+
+Design_mono
+Design_color
+```
+
+#### B1とE案のt検定
+```{r}
+Design_ttest <- t.test(Design_mono, Design_color, ver.equal = F)
+Design_ttest
+```
+
+
+
+--- 
+
+
+
+
+# 実験：ポスター評価点入力フォームの昇順・降順による違い
+```{r}
+# 昇順のデータ
+Form_asc <- AllData %>%
+  filter(SurvayType == "A1") %>%
+  pull(PosterScore)
+
+# 降順のデータ
+Form_desc <- AllData %>%
+  filter(SurvayType == "L") %>%
+  pull(PosterScore)
+```
+
+### A1とL案のt検定
+```{r}
+library(broom)
+sec_desc_ttest <- t.test(Form_desc, Form_asc) %>%
+  tidy()
+
+sec_desc_ttest
+```
+
+```{r}
+primacy_effect <- cbind(Form_asc,Form_desc)
+```
+
+
+
+
