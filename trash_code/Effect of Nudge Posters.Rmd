@@ -1,6 +1,8 @@
 ---
 title: "ナッジを活用した目のイラストによるゴミの分別促進に関する効果検証"
-output: html_document
+output:
+  html_document: default
+  pdf_document: default
 date: "2024-10-04"
 df_print: paged
 ---
@@ -41,7 +43,7 @@ head(AllData)
 
 --- 
 
-# 実験1：目のイラストによる効果比較
+# 研究1：目のイラストによる効果比較
 
 # 1. データ前処理
 ### 分析に必要な4種類のSurvayTypeを抽出したdfを作成
@@ -141,64 +143,8 @@ graph
 --- 
 
 # 3. 統計解析
-### 正規性の検定(Shapiro-Wilk test)
 
-H0)それぞれの`SurvayType`における`PosterScore`の分布は正規分布に従う。
-
-H1)それぞれの`SurvayType`における`PosterScore`の分布は正規分布に従うというわけではない。
-```{r}
-#SurvayTypeごとの正規性検定
-tapply(Eye_Illust_data$PosterScore, Eye_Illust_data$SurvayType,
-       shapiro.test)
-```
-
-データの正規性と等分散性を検討するため、シャピロ・ウィルク検定を実施した。シャピロ・ウィルク検定の結果、全てのグループで正規性が否定された（p < 0.05）。
-
-
-
-### 等分散性の検定(Levene's test)
-H0)それぞれの`SurvayType`における`PosterScore`の分布は等分散である。
-
-H1)それぞれの`SurvayType`における`PosterScore`の分布は等分散ではない。
-```{r}
-#install.packages("car")  # 初回のみ
-library(car) #等分散性の検定(Levene's test)
-
-
-# ルビーンの検定の実施
-levene_result <- leveneTest(Eye_Illust_data$PosterScore ~ Eye_Illust_data$SurvayType, 
-                            Eye_Illust_data)
-levene_result
-```
-データの正規性と等分散性を検討するため、シャピロ・ウィルク検定を実施した。シャピロ・ウィルク検定の結果、群間での等分散性は認められなかった（p = 0.303）。
-
-
-
-### ４つのグループにおける差の検定(Kruskal-Wallis test)
-```{r}
-# クラスカル・ウォリス検定の実施
-kruskal_result <- kruskal.test(Eye_Illust_data$PosterScore ~ Eye_Illust_data$SurvayType)
-
-kruskal_result
-```
-データの正規性および等分散性が満たされなかったため、非パラメトリック手法としてクラスカル–ウォリス検定を実施した。その結果、PosterScoreはSurvayType間で有意差が認められなかった（Kruskal–Wallis $\chi~2 = 7.5909$ , $p = 0.05527$）。
-
-### グループ間における事後検定(Dunn の多重比較検定でHolm 補正)
-```{r}
-#install.packages("FSA")
-library(FSA)
-
-dunnTest(
-  PosterScore ~ SurvayType,
-  data   = Eye_Illust_data,
-  method = "holm"   # Holm 補正
-)
-
-```
-
-
-
-## 分散分析（ロバストネス）
+## 分散分析
 - H1)目のイラスト`SurvayType`によってポスターの評価`PosterScore`は異なる。
 - H0)目のイラスト`SurvayType`によってポスターの評価`PosterScore`は異なるというわけではない。
 - 目のイラストが無いポスター案Cを対照群とし、その３種の目のイラストがあるポスター案をそれぞれ比較郡として、**目のイラストによる介入がポスターの評価スコアに影響を与えるのか調査しました。**
@@ -264,10 +210,69 @@ anova_result2 %>%
   kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
 ```
 
+## ノンパラメトリック検定
+ヒストグラムより、PosterScoreの分布は正規分布に従わないことが示唆されるため、ノンパラメトリック検定を実施する。
+
+### 正規性の検定(Shapiro-Wilk test)
+
+H0)それぞれの`SurvayType`における`PosterScore`の分布は正規分布に従う。
+
+H1)それぞれの`SurvayType`における`PosterScore`の分布は正規分布に従うというわけではない。
+```{r}
+#SurvayTypeごとの正規性検定
+tapply(Eye_Illust_data$PosterScore, Eye_Illust_data$SurvayType,
+       shapiro.test)
+```
+
+データの正規性と等分散性を検討するため、シャピロ・ウィルク検定を実施した。シャピロ・ウィルク検定の結果、全てのグループで正規性が否定された（p < 0.05）。
+
+
+
+### 等分散性の検定(Levene's test)
+H0)それぞれの`SurvayType`における`PosterScore`の分布は等分散である。
+
+H1)それぞれの`SurvayType`における`PosterScore`の分布は等分散ではない。
+```{r}
+#install.packages("car")  # 初回のみ
+library(car) #等分散性の検定(Levene's test)
+
+
+# ルビーンの検定の実施
+levene_result <- leveneTest(Eye_Illust_data$PosterScore ~ Eye_Illust_data$SurvayType, 
+                            Eye_Illust_data)
+levene_result
+```
+データの正規性と等分散性を検討するため、シャピロ・ウィルク検定を実施した。シャピロ・ウィルク検定の結果、群間での等分散性は認められなかった（p = 0.303）。
+
+
+
+### ４つのグループにおける差の検定(Kruskal-Wallis test)
+```{r}
+# クラスカル・ウォリス検定の実施
+kruskal_result <- kruskal.test(Eye_Illust_data$PosterScore ~ Eye_Illust_data$SurvayType)
+
+kruskal_result
+```
+データの正規性および等分散性が満たされなかったため、非パラメトリック手法としてクラスカル–ウォリス検定を実施した。その結果、PosterScoreはSurvayType間で有意差が認められなかった（Kruskal–Wallis $\chi~2 = 7.5909$ , $p = 0.05527$）。
+
+### グループ間における事後検定(Dunn の多重比較検定でHolm 補正)
+```{r}
+#install.packages("FSA")
+library(FSA)
+
+dunnTest(
+  PosterScore ~ SurvayType,
+  data   = Eye_Illust_data,
+  method = "holm"   # Holm 補正
+)
+
+```
+
+
 --- 
 
 
-# 実験2：イラスト３×フレーズ３の比較分析
+# 研究2：イラスト３×フレーズ３の比較分析
 #### 分析に必要な９種類のSurvayTypeを抽出したdfを作成
 ```{r}
 cross_data <- AllData %>%

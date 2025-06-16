@@ -727,8 +727,8 @@ head(AllData)</code></pre>
 <hr />
 </div>
 </div>
-<div id="実験1目のイラストによる効果比較" class="section level1">
-<h1>実験1：目のイラストによる効果比較</h1>
+<div id="研究1目のイラストによる効果比較" class="section level1">
+<h1>研究1：目のイラストによる効果比較</h1>
 </div>
 <div id="データ前処理" class="section level1">
 <h1>1. データ前処理</h1>
@@ -1023,124 +1023,8 @@ graph</code></pre>
 </div>
 <div id="統計解析" class="section level1">
 <h1>3. 統計解析</h1>
-<div id="正規性の検定shapiro-wilk-test" class="section level3">
-<h3>正規性の検定(Shapiro-Wilk test)</h3>
-<p>H0)それぞれの<code>SurvayType</code>における<code>PosterScore</code>の分布は正規分布に従う。</p>
-<p>H1)それぞれの<code>SurvayType</code>における<code>PosterScore</code>の分布は正規分布に従うというわけではない。</p>
-<pre class="r"><code>#SurvayTypeごとの正規性検定
-tapply(Eye_Illust_data$PosterScore, Eye_Illust_data$SurvayType,
-       shapiro.test)</code></pre>
-<pre><code>## $イラストなし
-## 
-##  Shapiro-Wilk normality test
-## 
-## data:  X[[i]]
-## W = 0.91989, p-value = 1.388e-05
-## 
-## 
-## $女性の目
-## 
-##  Shapiro-Wilk normality test
-## 
-## data:  X[[i]]
-## W = 0.88299, p-value = 1.568e-07
-## 
-## 
-## $簡単な目
-## 
-##  Shapiro-Wilk normality test
-## 
-## data:  X[[i]]
-## W = 0.89234, p-value = 1.995e-07
-## 
-## 
-## $複雑な目
-## 
-##  Shapiro-Wilk normality test
-## 
-## data:  X[[i]]
-## W = 0.9048, p-value = 2.646e-06</code></pre>
-<p>データの正規性と等分散性を検討するため、シャピロ・ウィルク検定を実施した。シャピロ・ウィルク検定の結果、全てのグループで正規性が否定された（p
-&lt; 0.05）。</p>
-</div>
-<div id="等分散性の検定levenes-test" class="section level3">
-<h3>等分散性の検定(Levene’s test)</h3>
-<p>H0)それぞれの<code>SurvayType</code>における<code>PosterScore</code>の分布は等分散である。</p>
-<p>H1)それぞれの<code>SurvayType</code>における<code>PosterScore</code>の分布は等分散ではない。</p>
-<pre class="r"><code>#install.packages(&quot;car&quot;)  # 初回のみ
-library(car) #等分散性の検定(Levene&#39;s test)</code></pre>
-<pre><code>## Loading required package: carData</code></pre>
-<pre><code>## 
-## Attaching package: &#39;car&#39;</code></pre>
-<pre><code>## The following object is masked from &#39;package:psych&#39;:
-## 
-##     logit</code></pre>
-<pre><code>## The following object is masked from &#39;package:dplyr&#39;:
-## 
-##     recode</code></pre>
-<pre><code>## The following object is masked from &#39;package:purrr&#39;:
-## 
-##     some</code></pre>
-<pre class="r"><code># ルビーンの検定の実施
-levene_result &lt;- leveneTest(Eye_Illust_data$PosterScore ~ Eye_Illust_data$SurvayType, 
-                            Eye_Illust_data)
-levene_result</code></pre>
-<pre><code>## Levene&#39;s Test for Homogeneity of Variance (center = median)
-##        Df F value Pr(&gt;F)
-## group   3  1.2164 0.3033
-##       410</code></pre>
-<p>データの正規性と等分散性を検討するため、シャピロ・ウィルク検定を実施した。シャピロ・ウィルク検定の結果、群間での等分散性は認められなかった（p
-= 0.303）。</p>
-</div>
-<div id="つのグループにおける差の検定kruskal-wallis-test" class="section level3">
-<h3>４つのグループにおける差の検定(Kruskal-Wallis test)</h3>
-<pre class="r"><code># クラスカル・ウォリス検定の実施
-kruskal_result &lt;- kruskal.test(Eye_Illust_data$PosterScore ~ Eye_Illust_data$SurvayType)
-
-kruskal_result</code></pre>
-<pre><code>## 
-##  Kruskal-Wallis rank sum test
-## 
-## data:  Eye_Illust_data$PosterScore by Eye_Illust_data$SurvayType
-## Kruskal-Wallis chi-squared = 7.5909, df = 3, p-value = 0.05527</code></pre>
-<p>データの正規性および等分散性が満たされなかったため、非パラメトリック手法としてクラスカル–ウォリス検定を実施した。その結果、PosterScoreはSurvayType間で有意差が認められなかった（Kruskal–Wallis
-<span class="math inline">\(\chi~2 = 7.5909\)</span> , <span class="math inline">\(p = 0.05527\)</span>）。</p>
-</div>
-<div id="グループ間における事後検定dunn-の多重比較検定でholm-補正" class="section level3">
-<h3>グループ間における事後検定(Dunn の多重比較検定でHolm 補正)</h3>
-<pre class="r"><code>#install.packages(&quot;FSA&quot;)
-library(FSA)</code></pre>
-<pre><code>## Registered S3 methods overwritten by &#39;FSA&#39;:
-##   method       from
-##   confint.boot car 
-##   hist.boot    car</code></pre>
-<pre><code>## ## FSA v0.10.0. See citation(&#39;FSA&#39;) if used in publication.
-## ## Run fishR() for related website and fishR(&#39;IFAR&#39;) for related book.</code></pre>
-<pre><code>## 
-## Attaching package: &#39;FSA&#39;</code></pre>
-<pre><code>## The following object is masked from &#39;package:car&#39;:
-## 
-##     bootCase</code></pre>
-<pre><code>## The following object is masked from &#39;package:psych&#39;:
-## 
-##     headtail</code></pre>
-<pre class="r"><code>dunnTest(
-  PosterScore ~ SurvayType,
-  data   = Eye_Illust_data,
-  method = &quot;holm&quot;   # Holm 補正
-)</code></pre>
-<pre><code>## Dunn (1964) Kruskal-Wallis multiple comparison</code></pre>
-<pre><code>##   p-values adjusted with the Holm method.</code></pre>
-<pre><code>##                Comparison          Z    P.unadj      P.adj
-## 1 イラストなし - 女性の目  0.3753545 0.70739686 1.00000000
-## 2 イラストなし - 簡単な目 -0.3448210 0.73022891 0.73022891
-## 3     女性の目 - 簡単な目 -0.7335746 0.46320807 1.00000000
-## 4 イラストなし - 複雑な目  2.1624844 0.03058086 0.15290429
-## 5     女性の目 - 複雑な目  1.8090830 0.07043811 0.28175244
-## 6     簡単な目 - 複雑な目  2.5617544 0.01041449 0.06248696</code></pre>
-</div>
-<div id="分散分析ロバストネス" class="section level2">
-<h2>分散分析（ロバストネス）</h2>
+<div id="分散分析" class="section level2">
+<h2>分散分析</h2>
 <ul>
 <li>H1)目のイラスト<code>SurvayType</code>によってポスターの評価<code>PosterScore</code>は異なる。</li>
 <li>H0)目のイラスト<code>SurvayType</code>によってポスターの評価<code>PosterScore</code>は異なるというわけではない。</li>
@@ -1862,12 +1746,132 @@ NA
 </tr>
 </tbody>
 </table>
+</div>
+</div>
+<div id="ノンパラメトリック検定" class="section level2">
+<h2>ノンパラメトリック検定</h2>
+<p>ヒストグラムより、PosterScoreの分布は正規分布に従わないことが示唆されるため、ノンパラメトリック検定を実施する。</p>
+<div id="正規性の検定shapiro-wilk-test" class="section level3">
+<h3>正規性の検定(Shapiro-Wilk test)</h3>
+<p>H0)それぞれの<code>SurvayType</code>における<code>PosterScore</code>の分布は正規分布に従う。</p>
+<p>H1)それぞれの<code>SurvayType</code>における<code>PosterScore</code>の分布は正規分布に従うというわけではない。</p>
+<pre class="r"><code>#SurvayTypeごとの正規性検定
+tapply(Eye_Illust_data$PosterScore, Eye_Illust_data$SurvayType,
+       shapiro.test)</code></pre>
+<pre><code>## $イラストなし
+## 
+##  Shapiro-Wilk normality test
+## 
+## data:  X[[i]]
+## W = 0.91989, p-value = 1.388e-05
+## 
+## 
+## $女性の目
+## 
+##  Shapiro-Wilk normality test
+## 
+## data:  X[[i]]
+## W = 0.88299, p-value = 1.568e-07
+## 
+## 
+## $簡単な目
+## 
+##  Shapiro-Wilk normality test
+## 
+## data:  X[[i]]
+## W = 0.89234, p-value = 1.995e-07
+## 
+## 
+## $複雑な目
+## 
+##  Shapiro-Wilk normality test
+## 
+## data:  X[[i]]
+## W = 0.9048, p-value = 2.646e-06</code></pre>
+<p>データの正規性と等分散性を検討するため、シャピロ・ウィルク検定を実施した。シャピロ・ウィルク検定の結果、全てのグループで正規性が否定された（p
+&lt; 0.05）。</p>
+</div>
+<div id="等分散性の検定levenes-test" class="section level3">
+<h3>等分散性の検定(Levene’s test)</h3>
+<p>H0)それぞれの<code>SurvayType</code>における<code>PosterScore</code>の分布は等分散である。</p>
+<p>H1)それぞれの<code>SurvayType</code>における<code>PosterScore</code>の分布は等分散ではない。</p>
+<pre class="r"><code>#install.packages(&quot;car&quot;)  # 初回のみ
+library(car) #等分散性の検定(Levene&#39;s test)</code></pre>
+<pre><code>## Loading required package: carData</code></pre>
+<pre><code>## 
+## Attaching package: &#39;car&#39;</code></pre>
+<pre><code>## The following object is masked from &#39;package:psych&#39;:
+## 
+##     logit</code></pre>
+<pre><code>## The following object is masked from &#39;package:dplyr&#39;:
+## 
+##     recode</code></pre>
+<pre><code>## The following object is masked from &#39;package:purrr&#39;:
+## 
+##     some</code></pre>
+<pre class="r"><code># ルビーンの検定の実施
+levene_result &lt;- leveneTest(Eye_Illust_data$PosterScore ~ Eye_Illust_data$SurvayType, 
+                            Eye_Illust_data)
+levene_result</code></pre>
+<pre><code>## Levene&#39;s Test for Homogeneity of Variance (center = median)
+##        Df F value Pr(&gt;F)
+## group   3  1.2164 0.3033
+##       410</code></pre>
+<p>データの正規性と等分散性を検討するため、シャピロ・ウィルク検定を実施した。シャピロ・ウィルク検定の結果、群間での等分散性は認められなかった（p
+= 0.303）。</p>
+</div>
+<div id="つのグループにおける差の検定kruskal-wallis-test" class="section level3">
+<h3>４つのグループにおける差の検定(Kruskal-Wallis test)</h3>
+<pre class="r"><code># クラスカル・ウォリス検定の実施
+kruskal_result &lt;- kruskal.test(Eye_Illust_data$PosterScore ~ Eye_Illust_data$SurvayType)
+
+kruskal_result</code></pre>
+<pre><code>## 
+##  Kruskal-Wallis rank sum test
+## 
+## data:  Eye_Illust_data$PosterScore by Eye_Illust_data$SurvayType
+## Kruskal-Wallis chi-squared = 7.5909, df = 3, p-value = 0.05527</code></pre>
+<p>データの正規性および等分散性が満たされなかったため、非パラメトリック手法としてクラスカル–ウォリス検定を実施した。その結果、PosterScoreはSurvayType間で有意差が認められなかった（Kruskal–Wallis
+<span class="math inline">\(\chi~2 = 7.5909\)</span> , <span class="math inline">\(p = 0.05527\)</span>）。</p>
+</div>
+<div id="グループ間における事後検定dunn-の多重比較検定でholm-補正" class="section level3">
+<h3>グループ間における事後検定(Dunn の多重比較検定でHolm 補正)</h3>
+<pre class="r"><code>#install.packages(&quot;FSA&quot;)
+library(FSA)</code></pre>
+<pre><code>## Registered S3 methods overwritten by &#39;FSA&#39;:
+##   method       from
+##   confint.boot car 
+##   hist.boot    car</code></pre>
+<pre><code>## ## FSA v0.10.0. See citation(&#39;FSA&#39;) if used in publication.
+## ## Run fishR() for related website and fishR(&#39;IFAR&#39;) for related book.</code></pre>
+<pre><code>## 
+## Attaching package: &#39;FSA&#39;</code></pre>
+<pre><code>## The following object is masked from &#39;package:car&#39;:
+## 
+##     bootCase</code></pre>
+<pre><code>## The following object is masked from &#39;package:psych&#39;:
+## 
+##     headtail</code></pre>
+<pre class="r"><code>dunnTest(
+  PosterScore ~ SurvayType,
+  data   = Eye_Illust_data,
+  method = &quot;holm&quot;   # Holm 補正
+)</code></pre>
+<pre><code>## Dunn (1964) Kruskal-Wallis multiple comparison</code></pre>
+<pre><code>##   p-values adjusted with the Holm method.</code></pre>
+<pre><code>##                Comparison          Z    P.unadj      P.adj
+## 1 イラストなし - 女性の目  0.3753545 0.70739686 1.00000000
+## 2 イラストなし - 簡単な目 -0.3448210 0.73022891 0.73022891
+## 3     女性の目 - 簡単な目 -0.7335746 0.46320807 1.00000000
+## 4 イラストなし - 複雑な目  2.1624844 0.03058086 0.15290429
+## 5     女性の目 - 複雑な目  1.8090830 0.07043811 0.28175244
+## 6     簡単な目 - 複雑な目  2.5617544 0.01041449 0.06248696</code></pre>
 <hr />
 </div>
 </div>
 </div>
-<div id="実験2イラスト３フレーズ３の比較分析" class="section level1">
-<h1>実験2：イラスト３×フレーズ３の比較分析</h1>
+<div id="研究2イラスト３フレーズ３の比較分析" class="section level1">
+<h1>研究2：イラスト３×フレーズ３の比較分析</h1>
 <div id="分析に必要な９種類のsurvaytypeを抽出したdfを作成" class="section level4">
 <h4>分析に必要な９種類のSurvayTypeを抽出したdfを作成</h4>
 <pre class="r"><code>cross_data &lt;- AllData %&gt;%
